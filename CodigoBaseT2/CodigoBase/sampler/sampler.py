@@ -10,6 +10,8 @@ class Sampler:
         self.tid = tid
         self.t = threading.Thread(target=self.sample, args=())
         self.active = True
+        self.tree = {}
+
         
     def start(self):
         self.active = True
@@ -27,7 +29,8 @@ class Sampler:
                     code = frame.f_code.co_name
                     stack.append(code)
                 stack.reverse()
-                print(stack)  # Esta linea imprime el stack despues de invertirlo la pueden comentar o descomentar si quieren
+                self.update__tree(stack)
+                ##print(stack)
     
     def sample(self):
         while self.active:
@@ -35,5 +38,18 @@ class Sampler:
             sleep(1)
 
     def print_report(self):
-        # Este metodo debe imprimir el reporte del call context tree
-        pass
+        self.print_tree(self.tree)
+
+    def print_tree(self, node, indent=0):
+        for func_name, data in node.items():
+            print('  ' * indent + f'{func_name}({data["tiempo"]} seconds)')
+            self.print_tree(data['hijos'], indent + 1)
+
+    def update__tree(self, stack):
+        node = self.tree
+        for func_name in stack:
+            if func_name not in node:
+                node[func_name] = {'tiempo': 1, 'hijos': {}}
+            else:
+                node[func_name]['tiempo'] += 1
+            node = node[func_name]['hijos']
